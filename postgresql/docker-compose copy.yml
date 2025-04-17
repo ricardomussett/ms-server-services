@@ -43,7 +43,7 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes --databases 2
+    command: redis-server --appendonly yes
     restart: unless-stopped
     networks:
       - postgres_network
@@ -68,7 +68,7 @@ services:
     image: rediscommander/redis-commander:latest
     container_name: msservergpstcp-redis-commander
     environment:
-      - REDIS_HOSTS=local:redis:6379:0:bull,local:redis:6379:1:truck
+      - REDIS_HOSTS=local:redis:6379
     ports:
       - "8081:8081"
     depends_on:
