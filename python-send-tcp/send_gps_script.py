@@ -4,6 +4,8 @@ import random
 from datetime import datetime
 import struct
 import binascii
+import statistics
+from tabulate import tabulate
 
 
 
@@ -17,6 +19,14 @@ class RopeGpsEmulator:
         self.pseudo_ip_str = self.get_pseudo_ip_string()
         self.socket = None
         self.sequence = 1
+        self.response_times = []
+        self.start_time = time.time()
+        self.request_count = 0
+        self.fail_count = 0
+        self.last_stats_time = time.time()
+        self.last_request_count = 0
+        self.requests_in_interval = 0
+        self.interval_start_time = time.time()
         
     def connect(self):
         """Establece la conexión TCP con el servidor"""
@@ -64,40 +74,86 @@ class RopeGpsEmulator:
             checksum ^= byte
         return checksum
     
+    def print_stats(self):
+        """Imprime estadísticas en formato Locust"""
+        current_time = time.time()
+        elapsed_time = current_time - self.start_time
+        interval_time = current_time - self.interval_start_time
+        
+        if elapsed_time > 0:
+            # Calcular RPS basado en el intervalo actual
+            current_rps = self.requests_in_interval / interval_time if interval_time > 0 else 0
+            fail_per_sec = (self.fail_count / elapsed_time) if elapsed_time > 0 else 0
+            
+            if self.response_times:
+                median = statistics.median(self.response_times)
+                p95 = statistics.quantiles(self.response_times, n=20)[18]  # 95th percentile
+                p99 = statistics.quantiles(self.response_times, n=100)[98]  # 99th percentile
+                avg = statistics.mean(self.response_times)
+                min_time = min(self.response_times)
+                max_time = max(self.response_times)
+            else:
+                median = p95 = p99 = avg = min_time = max_time = 0
+            
+            # Crear tabla de estadísticas
+            headers = ["Type", "Name", "# Requests", "# Fails", "Median (ms)", "95%ile (ms)", 
+                      "99%ile (ms)", "Average (ms)", "Min (ms)", "Max (ms)", "Current RPS", "Current Failures/s"]
+            
+            data = [["TCP", "GPS Data", self.request_count, self.fail_count, 
+                    f"{median:.1f}", f"{p95:.1f}", f"{p99:.1f}", f"{avg:.1f}", 
+                    f"{min_time:.1f}", f"{max_time:.1f}", f"{current_rps:.1f}", f"{fail_per_sec:.1f}"]]
+            
+            print("\n" + tabulate(data, headers=headers, tablefmt="grid"))
+            
+            # Reiniciar contadores del intervalo
+            self.requests_in_interval = 0
+            self.interval_start_time = current_time
+
     def send_packet(self, packet_type, data=b''):
         """Envía un paquete al servidor"""
         if not self.socket:
             if not self.connect():
+                self.fail_count += 1
                 return None
 
         try:
-            # Cabecera básica
-            header = b'\x24\x24'
-            main_command = packet_type.to_bytes(1, 'big')
-            length = len(data).to_bytes(2, 'big')
-            
-            # Construir paquete completo
-            packet = header + main_command + length + self.pseudo_ip + data
-            
-            # Calcular checksum (desde el byte 2 hasta 9 + length)
-            checksum_data = packet[2:9 + len(data)]
-            checksum = self.calculate_xor(checksum_data)
-            
-            # Añadir checksum y footer
-            packet += checksum.to_bytes(1, 'big') + b'\x0D'
-            
             # Convertir string hexadecimal a bytes
-            # hex_packet = "24248000256204c724250416055006010289708665162000000000c04700000000000000000001ff120d"
-            # hex_packet = "24248000256204c724000101175125000000000000000000000000004700000000000000000001fffa0d"
             hex_packet = '24248000256204c724250416112036010304868665447000000000c0470000000c0a0000000001ff380d'
             packet = bytes.fromhex(hex_packet)
             
+            # Medir tiempo de inicio
+            start_time = time.time()
+            
             # Enviar paquete
             self.socket.send(packet)
-            print(f"Enviado: {binascii.hexlify(packet).decode('utf-8')}")
-            return packet
+            print(f"Paquete enviado: {hex_packet}")
+            
+            # Esperar respuesta con timeout
+            self.socket.settimeout(5.0)  # 5 segundos de timeout
+            try:
+                response = self.socket.recv(1024)
+                response_time = (time.time() - start_time) * 1000  # Convertir a milisegundos
+                print(f"Respuesta recibida en {response_time:.2f} ms: {response.hex()}")
+                
+                # Actualizar estadísticas
+                self.request_count += 1
+                self.requests_in_interval += 1
+                self.response_times.append(response_time)
+                
+                # Imprimir estadísticas cada segundo
+                if time.time() - self.last_stats_time >= 1.0:
+                    self.print_stats()
+                    self.last_stats_time = time.time()
+                    
+                return packet
+            except socket.timeout:
+                print("Timeout esperando respuesta")
+                self.fail_count += 1
+                return None
+                
         except Exception as e:
             print(f"Error al enviar paquete: {e}")
+            self.fail_count += 1
             self.socket = None
             return None
     
@@ -265,6 +321,7 @@ class RopeGpsEmulator:
                 
         except KeyboardInterrupt:
             print("\nEmulador detenido")
+            self.print_stats()  # Imprimir estadísticas finales
         finally:
             if self.socket:
                 self.socket.close()
