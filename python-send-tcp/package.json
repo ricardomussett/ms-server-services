@@ -1,0 +1,12 @@
+{
+  "name": "socket-test",
+  "version": "1.0.0",
+  "description": "Socket.IO test application",
+  "main": "sockect-test.js",
+  "scripts": {
+    "start": "node sockect-test.js"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.7.2"
+  }
+} 
