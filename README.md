@@ -21,7 +21,7 @@ Este proyecto implementa un sistema de servicios para el manejo de datos GPS a t
 
 ```
 ms-server-services/
-├── data-base/              # Configuración de base de datos
+├── postgres/              # Configuración de base de datos
 │   └── docker-compose.yml  # Configuración de servicios Docker
 ├── load-test/              # Scripts de pruebas de carga
 │   ├── locustfile.py      # Pruebas de carga HTTP
@@ -74,7 +74,7 @@ cd ms-server-services
 
 2. Iniciar los servicios:
 ```bash
-cd data-base
+cd postgres
 docker-compose up -d
 ```
 
