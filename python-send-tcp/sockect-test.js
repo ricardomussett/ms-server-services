@@ -9,7 +9,7 @@ const socket = io(SOCKET_URL);
 // Función para solicitar datos con filtros
 function requestData(filters = {}) {
     const payload = {
-        pseudoIP: filters.pseudoIP,
+        pseudoIPs: filters.pseudoIPs || [], // Ahora acepta una lista de pseudoIPs
         startDate: filters.startDate,
         endDate: filters.endDate,
         limit: filters.limit
@@ -21,9 +21,14 @@ function requestData(filters = {}) {
 socket.on('connect', () => {
     console.log('Conectado al servidor WebSocket');
     
-    // Ejemplo de uso de requestData
+    // Ejemplo de uso de requestData con múltiples pseudoIPs
     requestData({
-        pseudoIP: '98.4.199.36',  // Ejemplo de pseudoIP
+        pseudoIPs: [
+            '98.4.199.36',
+            '98.4.199.37',
+            '98.4.199.38',
+            '98.4.199.39'
+        ],
         startDate: '2024-04-01',  // Ejemplo de fecha inicio
         endDate: '2026-04-21',    // Ejemplo de fecha fin
         limit: 100                // Ejemplo de límite

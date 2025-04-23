@@ -8,8 +8,6 @@ import statistics
 from tabulate import tabulate
 
 
-
-
 class RopeGpsEmulator:
     def __init__(self, server_ip, server_port, device_id):
         self.server_ip = server_ip
