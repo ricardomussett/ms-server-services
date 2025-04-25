@@ -329,8 +329,8 @@ class RopeGpsEmulator:
         return '.'.join(str(byte) for byte in self.pseudo_ip)
 
 # Configura estos valores según tu entorno
-SERVER_IP = 'localhost'  # IP del servidor
-SERVER_PORT = 81        # Puerto del servidor
+SERVER_IP = '47.243.17.75'  # IP del servidor
+SERVER_PORT = 4081        # Puerto del servidor
 DEVICE_ID = '13512345006'  # Número de SIM del dispositivo
 
 emulator = RopeGpsEmulator(SERVER_IP, SERVER_PORT, DEVICE_ID)

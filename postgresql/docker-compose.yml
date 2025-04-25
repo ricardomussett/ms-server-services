@@ -6,38 +6,18 @@ services:
       POSTGRES_DB: msservergpstcp
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_MAX_CONNECTIONS: "200"
-      POSTGRES_SHARED_BUFFERS: "1GB"  # 25% de la RAM del contenedor.
-      POSTGRES_EFFECTIVE_CACHE_SIZE: "3GB"  # 75% de la RAM.
-      POSTGRES_WORK_MEM: "16MB"  # Aumentar si hay operaciones sort/complex queries.
-      POSTGRES_MAINTENANCE_WORK_MEM: "256MB"  # Para índices/VACUUM.
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
+    restart: always
     networks:
       - postgres_network
-
-  pgbouncer:
-    image: edoburu/pgbouncer:latest
-    container_name: msservergpstcp-pgbouncer
-    environment:
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_HOST: postgres
-      DB_NAME: msservergpstcp
-      POOL_MODE: transaction
-      MAX_CLIENT_CONN: 1000
-      DEFAULT_POOL_SIZE: 30
-      LISTEN_PORT: 6432
-    ports:
-      - "6432:6432"
-    depends_on:
-      - postgres
-    restart: unless-stopped
-    networks:
-      - postgres_network
+    healthcheck:
+        test: ["CMD", "pg_isready", "-U", "postgres"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
 
   redis:
     image: redis:latest
@@ -46,45 +26,25 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes --databases 2
-    restart: unless-stopped
+    command: redis-server --save "" --appendonly no --databases 3
+    restart: always
     networks:
       - postgres_network
-
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: msservergpstcp-pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-    ports:
-      - "5433:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    restart: unless-stopped
-    depends_on:
-      - postgres
-    networks:
-      - postgres_network
-
-  redis-commander:
-    image: rediscommander/redis-commander:latest
-    container_name: msservergpstcp-redis-commander
-    environment:
-      - REDIS_HOSTS=local:redis:6379:0:bull,local:redis:6379:1:truck
-    ports:
-      - "8081:8081"
-    depends_on:
-      - redis
-    restart: unless-stopped
-    networks:
-      - postgres_network
+    healthcheck:
+        test: ["CMD", "redis-cli", "ping"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
 
 volumes:
   postgres_data:
-  pgadmin_data:
   redis_data:
 
 networks:
   postgres_network:
     driver: bridge 
+    enable_ipv6: false
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16

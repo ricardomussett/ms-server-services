@@ -1,7 +1,7 @@
 const io = require('socket.io-client');
 
 // Configuración
-const SOCKET_URL = 'http://localhost:3069'; // Ajusta según tu configuración
+const SOCKET_URL = 'http://47.243.17.75:4069'; // Ajusta según tu configuración
 
 // Conectar al servidor WebSocket
 const socket = io(SOCKET_URL);
