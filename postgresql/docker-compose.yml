@@ -4,8 +4,8 @@ services:
     container_name: msservergpstcp-postgres
     environment:
       POSTGRES_DB: msservergpstcp
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: solsoftdespostgres001
+      POSTGRES_PASSWORD: ##Qj8h7iZ9S4MNtlqwMC        
     ports:
       - "5432:5432"
     volumes:
@@ -23,7 +23,7 @@ services:
     image: redis:latest
     container_name: msservergpstcpredis
     ports:
-      - "6379:6379"
+      - ":6379"
     volumes:
       - redis_data:/data
     command: redis-server --save "" --appendonly no --databases 3
