@@ -116,7 +116,7 @@ class RopeGpsEmulator:
 
         try:
             # Convertir string hexadecimal a bytes
-            hex_packet = '24248000256204c724250416112036010304868665447000000000c0470000000c0a0000000001ff380d'
+            hex_packet = '24248000256204c924250426065343010295958664985000010256c0470100001c0100cc3e8b01ff5f0d'
             packet = bytes.fromhex(hex_packet)
             
             # Medir tiempo de inicio
